@@ -22,7 +22,7 @@ describe(`basic interop test ${browserA} => ${browserB}`, function () {
         }
         drivers = [
             await buildDriver(browserA, options, remoteUrl = 'http://10.1.0.10:8080'),
-            await buildDriver(browserB, options, remoteUrl = 'http://10.3.0.20:9090'),
+            await buildDriver(browserB, options, remoteUrl = 'http://10.3.0.20:8080'),
         ];
         clients = drivers.map(driver => {
             return {

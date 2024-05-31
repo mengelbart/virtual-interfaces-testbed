@@ -1,2 +1,4 @@
 node_modules/
 driver/
+.venv/
+__pycache__/

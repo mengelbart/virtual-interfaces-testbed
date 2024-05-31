@@ -52,7 +52,8 @@ async function buildDriver(browser = process.env.BROWSER || 'chrome', options = 
   const chromeOptions = new chrome.Options()
     .addArguments('allow-insecure-localhost')
     .addArguments('use-fake-device-for-media-stream')
-    .addArguments('allow-file-access-from-files');
+    .addArguments('allow-file-access-from-files')
+    .addArguments('no-sandbox');
   if (options.chromeFlags) {
     options.chromeFlags.forEach((flag) => chromeOptions.addArguments(flag));
   }
