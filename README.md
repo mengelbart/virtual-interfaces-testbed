@@ -4,6 +4,16 @@
 
 The `network` module implements helper functions to set up a dumbbell topology using Linux network namespaces and virtual interfaces. `main.py` can be used to interact with the network module. It implements commands to add or remove the necessary namespaces and network interfaces, add some network limits using `tc` and can directly run the iperf3 or webrtc testcases.
 
+To allow connectivity between the created interfaces you might have to run these commands:
+
+```shell
+modprobe br_netfilter
+sysctl -w net.bridge.bridge-nf-call-arptables=0
+sysctl -w net.bridge.bridge-nf-call-ip6tables=0
+sysctl -w net.bridge.bridge-nf-call-iptables=0
+sysctl -w net.ipv4.ip_forward=1
+```
+
 ## Iperf3 Tests
 
 The `iperf3test` module implements a simple function that runs an Iperf3 server and client in the emulated network and stores the log files for further analysis. The test requires iperf3 to be installed on the system.
