@@ -159,6 +159,19 @@ class PeerConnection {
       }
     });
   }
+
+  getStats() {
+    return this.driver.executeAsyncScript(() => {
+      const callback = arguments[arguments.length - 1];
+      let reports = [];
+      pc.getStats(null).then((stats) => {
+        stats.forEach((report) => {
+          reports.push(report);
+        });
+      });
+      callback(reports);
+    });
+  }
 }
 
 module.exports = {

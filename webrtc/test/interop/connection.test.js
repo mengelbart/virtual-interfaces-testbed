@@ -8,6 +8,7 @@
 const { buildDriver } = require('../webdriver');
 const { PeerConnection, MediaDevices } = require('../webrtcclient');
 const steps = require('../steps');
+const fs = require('fs');
 
 const browserA = process.env.BROWSER_A || 'chrome';
 const browserB = process.env.BROWSER_B || 'chrome';
@@ -53,5 +54,21 @@ describe(`basic interop test ${browserA} => ${browserB}`, function () {
         await steps.step(drivers, (d) => steps.waitNVideosExist(d, 1), 'Video elements exist');
         await steps.step(drivers, steps.waitAllVideosHaveEnoughData, 'Video elements have enough data');
         await steps.step(clients, (client) => client.connection.sendDataChannel(), 'Created data channel');
-    }, 30000);
+        
+        const client0Stats = fs.createWriteStream("get_stats_client_0.json");
+        const client1Stats = fs.createWriteStream("get_stats_client_1.json");
+        let intervalID = setInterval(async () => {
+            const c0stats = await clients[0].connection.getStats();
+            client0Stats.write(JSON.stringify(c0stats));
+            const c1stats = await clients[1].connection.getStats();
+            client1Stats.write(JSON.stringify(c1stats));
+        }, 1000)
+
+        await new Promise(r => setTimeout(r, 4*60000));
+
+        clearInterval(intervalID);
+        client0Stats.end();
+        client1Stats.end();
+
+    }, 5*60000);
 }, 90000);
