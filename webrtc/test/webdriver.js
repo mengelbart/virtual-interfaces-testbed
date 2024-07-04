@@ -53,7 +53,9 @@ async function buildDriver(browser = process.env.BROWSER || 'chrome', options = 
     .addArguments('allow-insecure-localhost')
     .addArguments('use-fake-device-for-media-stream')
     .addArguments('allow-file-access-from-files')
-    .addArguments('no-sandbox');
+    .addArguments('no-sandbox')
+    // .addArguments('--headless=new')
+    .addArguments('use-file-for-fake-video-capture=bbb.y4m');
   if (options.chromeFlags) {
     options.chromeFlags.forEach((flag) => chromeOptions.addArguments(flag));
   }
