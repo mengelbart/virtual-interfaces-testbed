@@ -55,6 +55,12 @@ class MediaDevices {
         return stream;
       });
   }
+
+  getUserMedia2(constraints) {
+    return this.driver.executeScript(() => {
+      return navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+    });
+  }
 }
 
 class PeerConnection {
@@ -73,6 +79,14 @@ class PeerConnection {
       stream = localStreams[stream.id];
       track = stream.getTracks().find(t => t.id === track.id);
       pc.addTrack(track, stream);
+      if (document.getElementById('local-video-' + stream.id)) {
+        return;
+      }
+      const video = document.createElement('video');
+      video.id = 'local-video-' + stream.id;
+      video.autoplay = true;
+      video.srcObject = stream;
+      document.body.appendChild(video);
     }, track, stream);
   }
 
@@ -84,6 +98,7 @@ class PeerConnection {
         .then(callback, callback);
     }, offerOptions);
   }
+
   createAnswer() {
     return this.driver.executeAsyncScript(() => {
       const callback = arguments[arguments.length - 1];

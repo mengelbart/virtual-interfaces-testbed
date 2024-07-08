@@ -40,12 +40,15 @@ describe(`basic interop test ${browserA} => ${browserB}`, function () {
         await Promise.all(drivers); // timeouts in before(Each)?
         await steps.step(drivers, (d) => d.get('http://localhost:8000/'), 'Empty page loaded');
         await steps.step(clients, (client) => client.connection.create(), 'Created RTCPeerConnection');
-        await steps.step(clients, async (client) => {
-            const stream = await client.mediaDevices.getUserMedia({ audio: true, video: true });
-            return Promise.all(stream.getTracks().map(async track => {
-                return client.connection.addTrack(track, stream);
-            }));
-        }, 'Acquired and added audio/video stream');
+        await new Promise(r => setTimeout(r, 1000));
+
+        const stream = await clients[0].mediaDevices.getUserMedia({ audio: true, video: true });
+        await Promise.all(stream.getTracks().map(async track => {
+            return clients[0].connection.addTrack(track, stream);
+        }));
+        // For some reason this still needs to be called for remote media to play...
+        await clients[1].mediaDevices.getUserMedia2();
+
         const offerWithCandidates = await clients[0].connection.setLocalDescription();
         await clients[1].connection.setRemoteDescription(offerWithCandidates);
         const answerWithCandidates = await clients[1].connection.setLocalDescription();
