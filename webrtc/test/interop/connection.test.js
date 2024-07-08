@@ -70,5 +70,9 @@ describe(`basic interop test ${browserA} => ${browserB}`, function () {
         client0Stats.end();
         client1Stats.end();
 
+        const recordingFile = fs.createWriteStream("media_recording.txt");
+        recordingFile.write(await clients[1].connection.saveRecording());
+        recordingFile.end();
+
     }, 5*60000);
 }, 90000);

@@ -125,7 +125,16 @@ class PeerConnection {
         video.autoplay = true;
         video.srcObject = event.streams[0];
         document.body.appendChild(video);
+
+        window.chunks = [];
+        window.mediaRecorder = new MediaRecorder(event.streams[0]);
+        window.mediaRecorder.start(1000);
+        window.mediaRecorder.ondataavailable = (e) => {
+          console.log('got chunk');
+          window.chunks.push(e.data);
+        };
       };
+
       pc.ondatachannel = function (event) {
         console.log('got dc');
         receiveChannel = event.channel;
@@ -170,6 +179,22 @@ class PeerConnection {
         });
       });
       callback(reports);
+    });
+  }
+
+  saveRecording() {
+    return this.driver.executeAsyncScript(() => {
+      const callback = arguments[arguments.length - 1];
+      window.mediaRecorder.stop();
+      const blob = new Blob(window.chunks);
+      callback(new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            resolve(reader.result.split(',')[1]); // Remove the "data:..." prefix
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      }));
     });
   }
 }
