@@ -71,6 +71,12 @@ class PeerConnection {
   create(rtcConfiguration) {
     return this.driver.executeScript(rtcConfiguration => {
       window.pc = new RTCPeerConnection(rtcConfiguration);
+      const sendChannel = pc.createDataChannel('send');
+      sendChannel.onopen = () => {
+        const readyState = sendChannel.readyState;
+        console.log('dc state ' + readyState);
+      }
+      window.sendChannel = sendChannel;
     }, rtcConfiguration);
   }
 
@@ -172,17 +178,26 @@ class PeerConnection {
 
   sendDataChannel() {
     return this.driver.executeScript(() => {
-      const sendChannel = pc.createDataChannel('send');
-      console.log('opening dc');
-      sendChannel.onopen = () => {
-        const readyState = sendChannel.readyState;
-        console.log('dc state ' + readyState);
-        if (readyState == 'open') {
-          sendChannel.send('hello world');
+      sendChannel.bufferedAmountLowThreshold = 1024;
+
+      sendChannel.onbufferedamountlow = () => {
+        console.log('buffered amount low event');
+        if (sendChannel.readyState === 'open') {
+          const randomData = new Uint8Array(Array.from({length: 65535}, () => Math.floor(Math.random() * 65535)));
+          sendChannel.send(randomData);
+          console.log('Sent random data:', randomData);
         }
+      };
+      
+      // Initial data send to kick off the process
+      if (sendChannel.readyState === 'open') {
+        const initialData = new Uint8Array(Array.from({length: 65535}, () => Math.floor(Math.random() * 65535)));
+        sendChannel.send(initialData);
+        console.log('Sent initial random data:', initialData);
       }
     });
   }
+
 
   getStats() {
     return this.driver.executeAsyncScript(() => {

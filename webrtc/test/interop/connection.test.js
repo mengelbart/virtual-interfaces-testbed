@@ -13,7 +13,9 @@ const fs = require('fs');
 const browserA = process.env.BROWSER_A || 'chrome';
 const browserB = process.env.BROWSER_B || 'chrome';
 
-describe(`basic interop test ${browserA} => ${browserB}`, function () {
+const test_duration = 70000;
+
+describe(`basic`, function () {
     let drivers;
     let clients;
     beforeAll(async () => {
@@ -36,7 +38,7 @@ describe(`basic interop test ${browserA} => ${browserB}`, function () {
         await drivers.map(driver => driver.close());
     });
 
-    it('establishes a connection', async () => {
+    it('single', async () => {
         await Promise.all(drivers); // timeouts in before(Each)?
         await steps.step(drivers, (d) => d.get('http://localhost:8000/'), 'Empty page loaded');
         await steps.step(clients, (client) => client.connection.create(), 'Created RTCPeerConnection');
@@ -56,19 +58,17 @@ describe(`basic interop test ${browserA} => ${browserB}`, function () {
 
         await steps.step(drivers, (d) => steps.waitNVideosExist(d, 1), 'Video elements exist');
         await steps.step(drivers, steps.waitAllVideosHaveEnoughData, 'Video elements have enough data');
-        await steps.step(clients, (client) => client.connection.sendDataChannel(), 'Created data channel');
-        
+
         const client0Stats = fs.createWriteStream("get_stats_client_0.json");
         const client1Stats = fs.createWriteStream("get_stats_client_1.json");
         let intervalID = setInterval(async () => {
             const c0stats = await clients[0].connection.getStats();
-            client0Stats.write(JSON.stringify(c0stats));
+            client0Stats.write(JSON.stringify(c0stats) + "\n");
             const c1stats = await clients[1].connection.getStats();
-            client1Stats.write(JSON.stringify(c1stats));
+            client1Stats.write(JSON.stringify(c1stats) + "\n");
         }, 1000)
 
-        await new Promise(r => setTimeout(r, 4*60000));
-
+        await new Promise(r => setTimeout(r, test_duration - 10000));
         clearInterval(intervalID);
         client0Stats.end();
         client1Stats.end();
@@ -76,6 +76,47 @@ describe(`basic interop test ${browserA} => ${browserB}`, function () {
         const recordingFile = fs.createWriteStream("media_recording.txt");
         recordingFile.write(await clients[1].connection.saveRecording());
         recordingFile.end();
+    }, test_duration);
 
-    }, 5*60000);
+    it('concurrent', async () => {
+        await Promise.all(drivers); // timeouts in before(Each)?
+        await steps.step(drivers, (d) => d.get('http://localhost:8000/'), 'Empty page loaded');
+        await steps.step(clients, (client) => client.connection.create(), 'Created RTCPeerConnection');
+        await new Promise(r => setTimeout(r, 1000));
+
+        const stream = await clients[0].mediaDevices.getUserMedia({ audio: true, video: true });
+        await Promise.all(stream.getTracks().map(async track => {
+            return clients[0].connection.addTrack(track, stream);
+        }));
+        // For some reason this still needs to be called for remote media to play...
+        await clients[1].mediaDevices.getUserMedia2();
+
+        const offerWithCandidates = await clients[0].connection.setLocalDescription();
+        await clients[1].connection.setRemoteDescription(offerWithCandidates);
+        const answerWithCandidates = await clients[1].connection.setLocalDescription();
+        await clients[0].connection.setRemoteDescription(answerWithCandidates);
+
+        await steps.step(drivers, (d) => steps.waitNVideosExist(d, 1), 'Video elements exist');
+        await steps.step(drivers, steps.waitAllVideosHaveEnoughData, 'Video elements have enough data');
+
+        clients[0].connection.sendDataChannel();
+        
+        const client0Stats = fs.createWriteStream("get_stats_client_0.json");
+        const client1Stats = fs.createWriteStream("get_stats_client_1.json");
+        let intervalID = setInterval(async () => {
+            const c0stats = await clients[0].connection.getStats();
+            client0Stats.write(JSON.stringify(c0stats) + "\n");
+            const c1stats = await clients[1].connection.getStats();
+            client1Stats.write(JSON.stringify(c1stats) + "\n");
+        }, 1000)
+
+        await new Promise(r => setTimeout(r, test_duration - 10000));
+        clearInterval(intervalID);
+        client0Stats.end();
+        client1Stats.end();
+
+        const recordingFile = fs.createWriteStream("media_recording.txt");
+        recordingFile.write(await clients[1].connection.saveRecording());
+        recordingFile.end();
+    }, test_duration);
 }, 90000);

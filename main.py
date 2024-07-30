@@ -4,7 +4,7 @@ import argparse
 
 from network.network import setup, clean, setup_tc, clear_tc
 from iperf3test.iperf3test import iperf3test
-from webrtc.webrtctest import webrtctest
+from webrtc.webrtctest import webrtc_media, webrtc_media_x_data
 
 def iperf3test_cmd(args):
     setup()
@@ -14,7 +14,11 @@ def iperf3test_cmd(args):
 
 def webrtctest_cmd(args):
     setup()
-    webrtctest()
+    webrtc_media()
+    clean()
+
+    setup()
+    webrtc_media_x_data()
     clean()
 
 

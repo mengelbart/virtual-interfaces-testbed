@@ -8,3 +8,5 @@ __pycache__/
 *.zip
 *.log
 *.txt
+media_output
+.ipynb_checkpoints

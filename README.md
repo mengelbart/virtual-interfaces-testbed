@@ -7,6 +7,7 @@ The `network` module implements helper functions to set up a dumbbell topology u
 To allow connectivity between the created interfaces you might have to run these commands:
 
 ```shell
+modprobe sch_netem
 modprobe br_netfilter
 sysctl -w net.bridge.bridge-nf-call-arptables=0
 sysctl -w net.bridge.bridge-nf-call-ip6tables=0
