@@ -66,7 +66,7 @@ describe(`basic`, function () {
             client0Stats.write(JSON.stringify(c0stats) + "\n");
             const c1stats = await clients[1].connection.getStats();
             client1Stats.write(JSON.stringify(c1stats) + "\n");
-        }, 1000)
+        }, 200)
 
         await new Promise(r => setTimeout(r, test_duration - 10000));
         clearInterval(intervalID);
@@ -108,7 +108,7 @@ describe(`basic`, function () {
             client0Stats.write(JSON.stringify(c0stats) + "\n");
             const c1stats = await clients[1].connection.getStats();
             client1Stats.write(JSON.stringify(c1stats) + "\n");
-        }, 1000)
+        }, 200)
 
         await new Promise(r => setTimeout(r, test_duration - 10000));
         clearInterval(intervalID);
