@@ -4,7 +4,9 @@ from pyroute2 import netns
 from pyroute2 import IPRoute
 from pyroute2 import NetNS
 from pyroute2.netlink.exceptions import NetlinkError
-
+import subprocess
+import os
+import signal
 
 NAMESPACES = [
     {
@@ -264,6 +266,26 @@ def remove_bandwidth_limit():
         ns.tc('del', index=dev, handle='0:', parent='1:')
 
 
+PID_FILE = '/tmp/tcpdump.br1.pid'
+
+def create_listener():
+    pid_file = Path(PID_FILE)
+    if pid_file.exists():
+        pid = int(Path(PID_FILE).read_text())
+        if check_pid_alive(pid):
+            print('tcpdump is already running')
+    process=subprocess.Popen(["tcpdump", "-i", "br1", "-w", "/tmp/br1.pcap"])
+    pid = process.pid
+    pid_file.write_text(str(pid))
+    
+def check_pid_alive(pid):
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    else:
+        return True
+
 def setup_tc():
     add_delay()
     add_bandwidth_limit()
@@ -279,9 +301,20 @@ def clear_tc():
     except Exception as e:
         print(e)
 
+def clear_listener():
+    if Path(PID_FILE).exists():
+        pid = int(Path(PID_FILE).read_text())
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except OSError:
+            print('tcpdump is not running')
+        Path(PID_FILE).unlink()
+    else:
+        print('tcpdump is not running')
 
 def clean():
     remove_iface()
+    clear_listener()
     remove_bridge()
     remove_ns()
 
@@ -290,4 +323,5 @@ def setup():
     create_ns()
     create_bridge()
     create_iface()
+    create_listener()
     create_routes()
