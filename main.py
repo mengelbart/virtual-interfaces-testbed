@@ -6,6 +6,7 @@ from network.network import setup, clean, setup_tc, clear_tc
 from iperf3test.iperf3test import iperf3test
 from webrtc.webrtctest import webrtc_media, webrtc_media_x_data
 import configuration
+from pion.piontest import piontest
 
 def iperf3test_cmd(args, config):
     setup(config)
@@ -25,6 +26,12 @@ def webrtctest_cmd(args, config):
 
 def setup_cmd(args, config):
     setup(config)
+
+
+def piontest_cmd(args):
+    setup()
+    piontest()
+    clean()
 
 
 def clean_cmd(args, config):
@@ -66,6 +73,9 @@ def main():
 
     webrtctest = subparsers.add_parser('webrtc', help='run webrtc test')
     webrtctest.set_defaults(func=webrtctest_cmd)
+
+    piontest = subparsers.add_parser('pion', help='run pion test')
+    piontest.set_defaults(func=piontest_cmd)
 
     args = parser.parse_args()
     config = configuration.configure(args.config)
