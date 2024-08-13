@@ -238,6 +238,8 @@ def add_delay(delay_us=10000):
 
 
 def remove_delay():
+    if len(netns.listnetns()) == 0:
+        return
     with NetNS('ns2') as ns:
         dev = ns.link_lookup(ifname='v3p1')[0]
         ns.tc('del', index=dev, handle='1:')
@@ -246,7 +248,7 @@ def remove_delay():
         ns.tc('del', index=dev, handle='1:')
 
 
-def add_bandwidth_limit(rate='2mbit', latency='50ms', burst=5000):
+def add_bandwidth_limit(rate='10mbit', latency='50ms', burst=10000):
     with NetNS('ns2') as ns:
         dev = ns.link_lookup(ifname='v3p1')[0]
         ns.tc('add', 'tbf', index=dev, handle='0:', parent='1:', rate=rate,

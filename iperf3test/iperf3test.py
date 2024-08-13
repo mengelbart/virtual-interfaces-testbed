@@ -15,11 +15,21 @@ def iperf3test():
     client_log = os.path.join(output_dir, 'client.json')
 
     setup_tc()
-    server = NSPopen('ns1', ['iperf3', '-s', '-J', '--logfile',
-                             server_log])
+    server = NSPopen('ns1', [
+        'iperf3',
+        '-s',
+        '-J',
+        '--logfile', server_log,
+    ])
     print('server process started')
-    client = NSPopen('ns4', ['iperf3', '-c', '10.1.0.10', '-J', '--logfile',
-                             client_log])
+    client = NSPopen('ns4', [
+        'iperf3',
+        '-c', '10.1.0.10',
+        '-J',
+        '--logfile', client_log,
+        '-i', '0.1',
+        '-C', 'cubic',
+    ])
     print('client process started')
     client.communicate()
     print('client process finished')

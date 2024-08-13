@@ -10,3 +10,5 @@ __pycache__/
 *.txt
 media_output
 .ipynb_checkpoints
+*.ivf
+*.err
