@@ -45,7 +45,7 @@ function mapVersion(browser, version) {
   return (versionMap[browser] || {})[version] || version;
 }
 
-async function buildDriver(browser = process.env.BROWSER || 'chrome', options = { version: process.env.BVER }, remoteUrl = '') {
+async function buildDriver(browser = process.env.BROWSER || 'chrome', options = { version: process.env.BVER }, remoteUrl = '', dataDir = '') {
   const version = mapVersion(options.version);
 
   // Chrome options.
@@ -56,6 +56,16 @@ async function buildDriver(browser = process.env.BROWSER || 'chrome', options = 
     .addArguments('no-sandbox')
     // .addArguments('--headless=new')
     .addArguments('use-file-for-fake-video-capture=bbb.y4m');
+    if (dataDir) {
+    chromeOptions.addArguments("enable-logging")
+    // .addArguments("--log-file="+logPath)
+    .addArguments("v=-3")
+    // .addArguments("log-level=6")
+    .addArguments("vmodule=*/webrtc/*=3")
+    .addArguments("user-data-dir="+dataDir);
+    }
+  // chromeOptions.addArguments("--enable-logging").addArguments("--verbose").addArguments("--v=-3").addArguments("--vmodule='*/webrtc/*'=3").addArguments("--log-file="+logPath);
+  console.log('chromeOptions', chromeOptions);
   if (options.chromeFlags) {
     options.chromeFlags.forEach((flag) => chromeOptions.addArguments(flag));
   }
