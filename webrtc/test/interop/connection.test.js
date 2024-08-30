@@ -12,6 +12,8 @@ const fs = require('fs');
 
 const browserA = process.env.BROWSER_A || 'chrome';
 const browserB = process.env.BROWSER_B || 'chrome';
+const userDataDirA = process.env.USER_DATA_DIR_A || '/tmp/chrome.a';
+const userDataDirB = process.env.USER_DATA_DIR_B || '/tmp/chrome.b';
 
 const test_duration = 70000;
 
@@ -24,8 +26,8 @@ describe(`basic`, function () {
             browserLogging: true,
         }
         drivers = [
-            await buildDriver(browserA, options, remoteUrl = 'http://10.1.0.10:8080'),
-            await buildDriver(browserB, options, remoteUrl = 'http://10.3.0.20:8080'),
+            await buildDriver(browserA, options, remoteUrl = 'http://10.1.0.10:8080', dataDir=userDataDirA),
+            await buildDriver(browserB, options, remoteUrl = 'http://10.3.0.20:8080', dataDir=userDataDirB),
         ];
         clients = drivers.map(driver => {
             return {
