@@ -5,36 +5,37 @@ import argparse
 from network.network import setup, clean, setup_tc, clear_tc
 from iperf3test.iperf3test import iperf3test
 from webrtc.webrtctest import webrtc_media, webrtc_media_x_data
+import configuration
 
-def iperf3test_cmd(args):
-    setup()
+def iperf3test_cmd(args, config):
+    setup(config)
     iperf3test()
     clean()
 
 
-def webrtctest_cmd(args):
-    setup()
-    webrtc_media()
+def webrtctest_cmd(args, config):
+    setup(config)
+    webrtc_media(config)
     clean()
 
-    setup()
-    webrtc_media_x_data()
-    clean()
-
-
-def setup_cmd(args):
-    setup()
-
-
-def clean_cmd(args):
+    setup(config)
+    webrtc_media_x_data(config)
     clean()
 
 
-def setup_tc_cmd(args):
+def setup_cmd(args, config):
+    setup(config)
+
+
+def clean_cmd(args, config):
+    clean()
+
+
+def setup_tc_cmd(args, config):
     setup_tc()
 
 
-def clear_tc_cmd(args):
+def clear_tc_cmd(args, config):
     clear_tc()
 
 
@@ -42,6 +43,10 @@ def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
+    
+    parser.add_argument("--config", type=str,action="append", help="path to config file")
+    
+    
     subparsers = parser.add_subparsers(help='sub-command help', required=True)
 
     clean = subparsers.add_parser('clean', help='clean up virtual interaces and namespaces')
@@ -63,7 +68,8 @@ def main():
     webrtctest.set_defaults(func=webrtctest_cmd)
 
     args = parser.parse_args()
-    args.func(args)
+    config = configuration.configure(args.config)
+    args.func(args, config)
 
 
 if __name__ == "__main__":

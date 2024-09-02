@@ -268,13 +268,13 @@ def remove_bandwidth_limit():
 
 PID_FILE = '/tmp/tcpdump.br1.pid'
 
-def create_listener():
+def create_listener(config):
     pid_file = Path(PID_FILE)
     if pid_file.exists():
         pid = int(Path(PID_FILE).read_text())
         if check_pid_alive(pid):
             print('tcpdump is already running')
-    process=subprocess.Popen(["tcpdump", "-i", "br1", "-w", "/tmp/br1.pcap"])
+    process=subprocess.Popen(["tcpdump", "-i", "br1", "-w", config.pcap_path])
     pid = process.pid
     pid_file.write_text(str(pid))
     
@@ -319,9 +319,9 @@ def clean():
     remove_ns()
 
 
-def setup():
+def setup(config):
     create_ns()
     create_bridge()
     create_iface()
-    create_listener()
+    create_listener(config)
     create_routes()
