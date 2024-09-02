@@ -4,23 +4,10 @@ from pyroute2 import NSPopen
 from subprocess import Popen
 from network.network import setup_tc, clear_tc
 import os
-from dataclasses import dataclass, field
-from omegaconf import OmegaConf
 import shutil
-from typing import List, Dict
-
 
 WEBDRIVER_PATH = './webrtc/driver/chromedriver-linux64/chromedriver'
 
-@dataclass
-class WebRTCConfig:
-    data_dir_offset: str = "/tmp"
-    _used_config_files: list = field(default_factory=list)
-    collect_chrome_logs: bool = True
-    data_a: str = "data_a"
-    data_b: str = "data_b"
-    _collect_chrome_logs_from: Dict[str, str] = field(default_factory=dict)
-    
 
 def setup(config):
     setup_tc()
@@ -52,10 +39,9 @@ def collect_logs(destination, config):
     if config.collect_chrome_logs:
         for key, value in config._collect_chrome_logs_from.items():
             d = Path(value)
-            shutil.move(d, (Path(destination) / key))
+            shutil.copy(d, (Path(destination) / key))
 
-def webrtc_media():
-    config = OmegaConf.structured(WebRTCConfig)
+def webrtc_media(config):
     ps = setup(config)
     env = os.environ.copy()
     data_a = Path(config.data_dir_offset) / config.data_a
@@ -74,8 +60,7 @@ def webrtc_media():
     collect_logs('webrtc/media', config)
 
 
-def webrtc_media_x_data():
-    config = OmegaConf.structured(WebRTCConfig)
+def webrtc_media_x_data(config):
     ps = setup(config)
     env = os.environ.copy()
     data_a = Path(config.data_dir_offset) / config.data_a
