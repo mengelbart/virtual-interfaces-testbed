@@ -1,0 +1,125 @@
+diff --git a/net/dcsctp/tx/retransmission_queue.cc b/net/dcsctp/tx/retransmission_queue.cc
+index 8c0d227a36..4faa59a93c 100644
+--- a/net/dcsctp/tx/retransmission_queue.cc
++++ b/net/dcsctp/tx/retransmission_queue.cc
+@@ -107,7 +107,7 @@ void RetransmissionQueue::MaybeExitFastRecovery(
+   // recovery] exit point, Fast Recovery is exited."
+   if (fast_recovery_exit_tsn_.has_value() &&
+       cumulative_tsn_ack >= *fast_recovery_exit_tsn_) {
+-    RTC_DLOG(LS_VERBOSE) << log_prefix_
++    RTC_LOG(LS_VERBOSE) << log_prefix_
+                          << "exit_point=" << *fast_recovery_exit_tsn_->Wrap()
+                          << " reached - exiting fast recovery";
+     fast_recovery_exit_tsn_ = absl::nullopt;
+@@ -131,7 +131,7 @@ void RetransmissionQueue::HandleIncreasedCumulativeTsnAck(
+       // lesser of 1) the total size of the previously outstanding DATA
+       // chunk(s) acknowledged, and 2) the destination's path MTU."
+       cwnd_ += std::min(total_bytes_acked, options_.mtu);
+-      RTC_DLOG(LS_VERBOSE) << log_prefix_ << "SS increase cwnd=" << cwnd_
++      RTC_LOG(LS_VERBOSE) << log_prefix_ << "SS increase cwnd=" << cwnd_
+                            << " (" << old_cwnd << ")";
+     }
+   } else if (phase() == CongestionAlgorithmPhase::kCongestionAvoidance) {
+@@ -155,12 +155,12 @@ void RetransmissionQueue::HandleIncreasedCumulativeTsnAck(
+       // Errata: https://datatracker.ietf.org/doc/html/rfc8540#section-3.12
+       partial_bytes_acked_ -= cwnd_;
+       cwnd_ += options_.mtu;
+-      RTC_DLOG(LS_VERBOSE) << log_prefix_ << "CA increase cwnd=" << cwnd_
++      RTC_LOG(LS_VERBOSE) << log_prefix_ << "CA increase cwnd=" << cwnd_
+                            << " (" << old_cwnd << ") ssthresh=" << ssthresh_
+                            << ", pba=" << partial_bytes_acked_ << " ("
+                            << old_pba << ")";
+     } else {
+-      RTC_DLOG(LS_VERBOSE) << log_prefix_ << "CA unchanged cwnd=" << cwnd_
++      RTC_LOG(LS_VERBOSE) << log_prefix_ << "CA unchanged cwnd=" << cwnd_
+                            << " (" << old_cwnd << ") ssthresh=" << ssthresh_
+                            << ", pba=" << partial_bytes_acked_ << " ("
+                            << old_pba << ")";
+@@ -180,7 +180,7 @@ void RetransmissionQueue::HandlePacketLoss(UnwrappedTSN highest_tsn_acked) {
+     cwnd_ = ssthresh_;
+     partial_bytes_acked_ = 0;
+ 
+-    RTC_DLOG(LS_VERBOSE) << log_prefix_
++    RTC_LOG(LS_VERBOSE) << log_prefix_
+                          << "packet loss detected (not fast recovery). cwnd="
+                          << cwnd_ << " (" << old_cwnd
+                          << "), ssthresh=" << ssthresh_
+@@ -191,7 +191,7 @@ void RetransmissionQueue::HandlePacketLoss(UnwrappedTSN highest_tsn_acked) {
+     // "If not in Fast Recovery, enter Fast Recovery and mark the highest
+     // outstanding TSN as the Fast Recovery exit point."
+     fast_recovery_exit_tsn_ = outstanding_data_.highest_outstanding_tsn();
+-    RTC_DLOG(LS_VERBOSE) << log_prefix_
++    RTC_LOG(LS_VERBOSE) << log_prefix_
+                          << "fast recovery initiated with exit_point="
+                          << *fast_recovery_exit_tsn_->Wrap();
+   } else {
+@@ -199,7 +199,7 @@ void RetransmissionQueue::HandlePacketLoss(UnwrappedTSN highest_tsn_acked) {
+     // "While in Fast Recovery, the ssthresh and cwnd SHOULD NOT change for
+     // any destinations due to a subsequent Fast Recovery event (i.e., one
+     // SHOULD NOT reduce the cwnd further due to a subsequent Fast Retransmit)."
+-    RTC_DLOG(LS_VERBOSE) << log_prefix_
++    RTC_LOG(LS_VERBOSE) << log_prefix_
+                          << "packet loss detected (fast recovery). No changes.";
+   }
+ }
+@@ -283,13 +283,13 @@ bool RetransmissionQueue::HandleSack(Timestamp now, const SackChunk& sack) {
+ 
+   // Add lifecycle events for delivered messages.
+   for (LifecycleId lifecycle_id : ack_info.acked_lifecycle_ids) {
+-    RTC_DLOG(LS_VERBOSE) << "Triggering OnLifecycleMessageDelivered("
++    RTC_LOG(LS_VERBOSE) << "Triggering OnLifecycleMessageDelivered("
+                          << lifecycle_id.value() << ")";
+     callbacks_.OnLifecycleMessageDelivered(lifecycle_id);
+     callbacks_.OnLifecycleEnd(lifecycle_id);
+   }
+   for (LifecycleId lifecycle_id : ack_info.abandoned_lifecycle_ids) {
+-    RTC_DLOG(LS_VERBOSE) << "Triggering OnLifecycleMessageExpired("
++    RTC_LOG(LS_VERBOSE) << "Triggering OnLifecycleMessageExpired("
+                          << lifecycle_id.value() << ", true)";
+     callbacks_.OnLifecycleMessageExpired(lifecycle_id,
+                                          /*maybe_delivered=*/true);
+@@ -299,7 +299,7 @@ bool RetransmissionQueue::HandleSack(Timestamp now, const SackChunk& sack) {
+   // Update of outstanding_data_ is now done. Congestion control remains.
+   UpdateReceiverWindow(sack.a_rwnd());
+ 
+-  RTC_DLOG(LS_VERBOSE) << log_prefix_ << "Received SACK, cum_tsn_ack="
++  RTC_LOG(LS_VERBOSE) << log_prefix_ << "Received SACK, cum_tsn_ack="
+                        << *cumulative_tsn_ack.Wrap() << " ("
+                        << *old_last_cumulative_tsn_ack.Wrap()
+                        << "), unacked_bytes="
+@@ -389,7 +389,7 @@ void RetransmissionQueue::HandleT3RtxTimerExpiry() {
+ 
+   // Already done by the Timer implementation.
+ 
+-  RTC_DLOG(LS_INFO) << log_prefix_ << "t3-rtx expired. new cwnd=" << cwnd_
++  RTC_LOG(LS_INFO) << log_prefix_ << "t3-rtx expired. new cwnd=" << cwnd_
+                     << " (" << old_cwnd << "), ssthresh=" << ssthresh_
+                     << ", unacked_bytes " << unacked_bytes() << " ("
+                     << old_unacked_bytes << ")";
+@@ -412,7 +412,7 @@ RetransmissionQueue::GetChunksForFastRetransmit(size_t bytes_in_packet) {
+   // the first outstanding DATA chunk sent to that address."
+   if (to_be_sent[0].first ==
+       outstanding_data_.last_cumulative_tsn_ack().next_value().Wrap()) {
+-    RTC_DLOG(LS_VERBOSE)
++    RTC_LOG(LS_VERBOSE)
+         << log_prefix_
+         << "First outstanding DATA to be retransmitted - restarting T3-RTX";
+     t3_rtx_.Stop();
+@@ -433,7 +433,7 @@ RetransmissionQueue::GetChunksForFastRetransmit(size_t bytes_in_packet) {
+   ++rtx_packets_count_;
+   rtx_bytes_count_ += bytes_retransmitted;
+ 
+-  RTC_DLOG(LS_VERBOSE) << log_prefix_ << "Fast-retransmitting TSN "
++  RTC_LOG(LS_VERBOSE) << log_prefix_ << "Fast-retransmitting TSN "
+                        << StrJoin(to_be_sent, ",",
+                                   [&](rtc::StringBuilder& sb,
+                                       const std::pair<TSN, Data>& c) {
+@@ -514,7 +514,7 @@ std::vector<std::pair<TSN, Data>> RetransmissionQueue::GetChunksToSend(
+     if (!t3_rtx_.is_running()) {
+       t3_rtx_.Start();
+     }
+-    RTC_DLOG(LS_VERBOSE) << log_prefix_ << "Sending TSN "
++    RTC_LOG(LS_VERBOSE) << log_prefix_ << "Sending TSN "
+                          << StrJoin(to_be_sent, ",",
+                                     [&](rtc::StringBuilder& sb,
+                                         const std::pair<TSN, Data>& c) {
