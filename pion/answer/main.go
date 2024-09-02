@@ -52,15 +52,15 @@ func main() { // nolint:gocognit
 		},
 	}
 
-	m:=&webrtc.MediaEngine{}
+	m := &webrtc.MediaEngine{}
 	if err := m.RegisterCodec(webrtc.RTPCodecParameters{
 		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeVP8, ClockRate: 90000, Channels: 0, SDPFmtpLine: "", RTCPFeedback: nil},
 		PayloadType:        96,
 	}, webrtc.RTPCodecTypeVideo); err != nil {
 		panic(err)
 	}
-	
-	i:=&interceptor.Registry{}
+
+	i := &interceptor.Registry{}
 	intervalPliFactory, err := intervalpli.NewReceiverInterceptor()
 	if err != nil {
 		panic(err)
@@ -72,8 +72,7 @@ func main() { // nolint:gocognit
 		panic(err)
 	}
 
-	api:=webrtc.NewAPI(webrtc.WithMediaEngine(m), webrtc.WithInterceptorRegistry(i))
-
+	api := webrtc.NewAPI(webrtc.WithMediaEngine(m), webrtc.WithInterceptorRegistry(i))
 
 	// Create a new RTCPeerConnection
 	peerConnection, err := api.NewPeerConnection(config)

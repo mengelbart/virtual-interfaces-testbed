@@ -17,7 +17,7 @@ def piontest():
     with open(answer_log, 'w') as al, open(answer_err, 'w') as ae, open(offer_log, 'w') as ol, open(offer_err, 'w') as oe:
         setup_tc()
         env = os.environ.copy()
-        env["PION_LOG_TRACE"] = "sctp,gcc_delay_controller,gcc_loss_controller"
+        env["PION_LOG_TRACE"] = "offerer,sctp,gcc_delay_controller,gcc_loss_controller"
         answer = NSPopen('ns1', [
             './pion/answer/answer',
             '-answer-address', ':8080',
