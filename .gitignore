@@ -12,3 +12,4 @@ media_output
 .ipynb_checkpoints
 *.ivf
 *.err
+*.csv

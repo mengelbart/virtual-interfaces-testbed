@@ -28,8 +28,8 @@ def setup_cmd(args, config):
     setup(config)
 
 
-def piontest_cmd(args):
-    setup()
+def piontest_cmd(args, config):
+    setup(config)
     piontest()
     clean()
 

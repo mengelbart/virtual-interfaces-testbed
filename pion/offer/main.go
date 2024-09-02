@@ -20,6 +20,7 @@ import (
 	"github.com/pion/interceptor"
 	"github.com/pion/interceptor/pkg/cc"
 	"github.com/pion/interceptor/pkg/gcc"
+	"github.com/pion/logging"
 	"github.com/pion/randutil"
 	"github.com/pion/webrtc/v3"
 	"github.com/pion/webrtc/v3/pkg/media"
@@ -27,8 +28,8 @@ import (
 )
 
 const (
-	lowBitrate = 300_000
-	medBitrate = 1_000_000
+	lowBitrate  = 300_000
+	medBitrate  = 1_000_000
 	highBitrate = 2_500_000
 
 	ivfHeaderSize = 32
@@ -47,9 +48,9 @@ func signalCandidate(addr string, c *webrtc.ICECandidate) error {
 func main() { //nolint:gocognit
 	offerAddr := flag.String("offer-address", ":50000", "Address that the Offer HTTP server is hosted on.")
 	answerAddr := flag.String("answer-address", "127.0.0.1:60000", "Address that the Answer HTTP server is hosted on.")
-	highRateFile :=flag.String("high", "high.ivf", "IVF file to read high bitrate video")
-	medRateFile :=flag.String("med", "med.ivf", "IVF file to read medium bitrate video")
-	lowRateFile :=flag.String("low", "low.ivf", "IVF file to read low bitrate video")
+	highRateFile := flag.String("high", "high.ivf", "IVF file to read high bitrate video")
+	medRateFile := flag.String("med", "med.ivf", "IVF file to read medium bitrate video")
+	lowRateFile := flag.String("low", "low.ivf", "IVF file to read low bitrate video")
 	flag.Parse()
 
 	qualityLevels := []struct {
@@ -96,7 +97,7 @@ func main() { //nolint:gocognit
 		panic(err)
 	}
 
-	api:=webrtc.NewAPI(webrtc.WithInterceptorRegistry(i), webrtc.WithMediaEngine(m))
+	api := webrtc.NewAPI(webrtc.WithInterceptorRegistry(i), webrtc.WithMediaEngine(m))
 
 	var candidatesMux sync.Mutex
 	pendingCandidates := make([]*webrtc.ICECandidate, 0)
@@ -221,12 +222,12 @@ func main() { //nolint:gocognit
 	dataChannel.OnOpen(func() {
 		fmt.Printf("Data channel '%s'-'%d' open. Random data will now be sent to any connected DataChannels\n", dataChannel.Label(), dataChannel.ID())
 
-		sendData:=func(){
+		sendData := func() {
 			message, sendTextErr := randutil.GenerateCryptoRandomString(10*1024, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 			if sendTextErr != nil {
 				panic(sendTextErr)
 			}
-			
+
 			// Send the message as text
 			// fmt.Printf("Sending '%v' bytes\n", len(message))
 			if sendTextErr = dataChannel.SendText(message); sendTextErr != nil {
@@ -235,7 +236,7 @@ func main() { //nolint:gocognit
 		}
 		sendData()
 		dataChannel.SetBufferedAmountLowThreshold(1024)
-		dataChannel.OnBufferedAmountLow(func ()  {
+		dataChannel.OnBufferedAmountLow(func() {
 			sendData()
 		})
 	})
@@ -268,7 +269,6 @@ func main() { //nolint:gocognit
 	} else if err := resp.Body.Close(); err != nil {
 		panic(err)
 	}
-
 
 	go func() {
 		rtcpBuf := make([]byte, 1500)
@@ -308,10 +308,13 @@ func main() { //nolint:gocognit
 		}
 	}
 
-	start:=time.Now()
-	end:=start.Add(20*time.Second)
+	start := time.Now()
+	end := start.Add(5 * time.Minute)
+	log := logging.NewDefaultLoggerFactory().NewLogger("offerer")
 	for ; time.Now().Before(end); <-ticker.C {
 		targetBitrate := estimator.GetTargetBitrate()
+		stats := estimator.GetStats()
+		log.Tracef("target-bitrate=%v, stats=%v", targetBitrate, stats)
 		switch {
 		// If current quality level is below target bitrate drop to level below
 		case currentQuality != 0 && targetBitrate < qualityLevels[currentQuality].bitrate:
