@@ -65,9 +65,9 @@ def webrtc(config, data=False):
         shutil.rmtree(data_b)
     env['USER_DATA_DIR_A'] = str(data_a)
     env['USER_DATA_DIR_B'] = str(data_b)
-    config._collect_chrome_logs_from[f'chromelog_a.{'webrtc_media_x_data' if data else 'webrtc_media'}.log'] = data_a / \
+    config._collect_chrome_logs_from[f'chromelog_a.{"webrtc_media_x_data" if data else "webrtc_media"}.log'] = data_a / \
         "chrome_debug.log"
-    config._collect_chrome_logs_from[f'chromelog_b.{'webrtc_media_x_data' if data else 'webrtc_media'}.log'] = data_b / \
+    config._collect_chrome_logs_from[f'chromelog_b.{"webrtc_media_x_data" if data else "webrtc_media"}.log'] = data_b / \
         "chrome_debug.log"
     if data:
         npm = Popen(['npm', 'run', 'jest', '--prefix', './webrtc',
@@ -77,4 +77,5 @@ def webrtc(config, data=False):
                     '--', '-t', 'basic single'], env=env)
     npm.communicate()
     teardown(ps)
-    collect_logs(f'{'webrtc_media_x_data' if data else 'webrtc_media'}', config)
+    collect_logs(Path(config.output_dir) /
+                 f'{"webrtc_media_x_data" if data else "webrtc_media"}', config)
