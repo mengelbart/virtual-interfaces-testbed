@@ -6,6 +6,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -21,7 +22,6 @@ import (
 	"github.com/pion/interceptor/pkg/cc"
 	"github.com/pion/interceptor/pkg/gcc"
 	"github.com/pion/logging"
-	"github.com/pion/randutil"
 	"github.com/pion/webrtc/v3"
 	"github.com/pion/webrtc/v3/pkg/media"
 	"github.com/pion/webrtc/v3/pkg/media/ivfreader"
@@ -51,6 +51,9 @@ func main() { //nolint:gocognit
 	highRateFile := flag.String("high", "high.ivf", "IVF file to read high bitrate video")
 	medRateFile := flag.String("med", "med.ivf", "IVF file to read medium bitrate video")
 	lowRateFile := flag.String("low", "low.ivf", "IVF file to read low bitrate video")
+	duration := flag.Duration("duration", 5*time.Minute, "Test run duration")
+	video := flag.Bool("video", false, "Send media data over RTP")
+	data := flag.Bool("data", false, "Send random data over datachannel")
 	flag.Parse()
 
 	qualityLevels := []struct {
@@ -192,59 +195,62 @@ func main() { //nolint:gocognit
 	// nolint: gosec
 	go func() { panic(http.ListenAndServe(*offerAddr, nil)) }()
 
-	// Create a datachannel with label 'data'
-	dataChannel, err := peerConnection.CreateDataChannel("data", nil)
-	if err != nil {
-		panic(err)
-	}
-
-	// Set the handler for Peer connection state
-	// This will notify you when the peer has connected/disconnected
-	peerConnection.OnConnectionStateChange(func(s webrtc.PeerConnectionState) {
-		fmt.Printf("Peer Connection State has changed: %s\n", s.String())
-
-		if s == webrtc.PeerConnectionStateFailed {
-			// Wait until PeerConnection has had no network activity for 30 seconds or another failure. It may be reconnected using an ICE Restart.
-			// Use webrtc.PeerConnectionStateDisconnected if you are interested in detecting faster timeout.
-			// Note that the PeerConnection may come back from PeerConnectionStateDisconnected.
-			fmt.Println("Peer Connection has gone to failed exiting")
-			os.Exit(0)
+	if *data {
+		// Create a datachannel with label 'data'
+		dataChannel, err := peerConnection.CreateDataChannel("data", nil)
+		if err != nil {
+			panic(err)
 		}
 
-		if s == webrtc.PeerConnectionStateClosed {
-			// PeerConnection was explicitly closed. This usually happens from a DTLS CloseNotify
-			fmt.Println("Peer Connection has gone to closed exiting")
-			os.Exit(0)
-		}
-	})
+		// Set the handler for Peer connection state
+		// This will notify you when the peer has connected/disconnected
+		peerConnection.OnConnectionStateChange(func(s webrtc.PeerConnectionState) {
+			fmt.Printf("Peer Connection State has changed: %s\n", s.String())
 
-	// Register channel opening handling
-	dataChannel.OnOpen(func() {
-		fmt.Printf("Data channel '%s'-'%d' open. Random data will now be sent to any connected DataChannels\n", dataChannel.Label(), dataChannel.ID())
-
-		sendData := func() {
-			message, sendTextErr := randutil.GenerateCryptoRandomString(10*1024, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-			if sendTextErr != nil {
-				panic(sendTextErr)
+			if s == webrtc.PeerConnectionStateFailed {
+				// Wait until PeerConnection has had no network activity for 30 seconds or another failure. It may be reconnected using an ICE Restart.
+				// Use webrtc.PeerConnectionStateDisconnected if you are interested in detecting faster timeout.
+				// Note that the PeerConnection may come back from PeerConnectionStateDisconnected.
+				fmt.Println("Peer Connection has gone to failed exiting")
+				os.Exit(0)
 			}
 
-			// Send the message as text
-			// fmt.Printf("Sending '%v' bytes\n", len(message))
-			if sendTextErr = dataChannel.SendText(message); sendTextErr != nil {
-				panic(sendTextErr)
+			if s == webrtc.PeerConnectionStateClosed {
+				// PeerConnection was explicitly closed. This usually happens from a DTLS CloseNotify
+				fmt.Println("Peer Connection has gone to closed exiting")
+				os.Exit(0)
 			}
-		}
-		sendData()
-		dataChannel.SetBufferedAmountLowThreshold(1024)
-		dataChannel.OnBufferedAmountLow(func() {
-			sendData()
 		})
-	})
 
-	// Register text message handling
-	dataChannel.OnMessage(func(msg webrtc.DataChannelMessage) {
-		fmt.Printf("Message from DataChannel '%s': '%s'\n", dataChannel.Label(), string(msg.Data))
-	})
+		// Register channel opening handling
+		dataChannel.OnOpen(func() {
+			fmt.Printf("Data channel '%s'-'%d' open. Random data will now be sent to any connected DataChannels\n", dataChannel.Label(), dataChannel.ID())
+
+			buffer := make([]byte, 4096)
+			sendData := func() {
+				_, err = io.ReadFull(rand.Reader, buffer)
+				if err != nil {
+					panic(err)
+				}
+
+				for dataChannel.BufferedAmount() <= 1024*1024 {
+					if err := dataChannel.Send(buffer); err != nil {
+						panic(err)
+					}
+				}
+			}
+			sendData()
+			dataChannel.SetBufferedAmountLowThreshold(1024 * 1024)
+			dataChannel.OnBufferedAmountLow(func() {
+				sendData()
+			})
+		})
+
+		// Register text message handling
+		dataChannel.OnMessage(func(msg webrtc.DataChannelMessage) {
+			fmt.Printf("Message from DataChannel '%s': '%s'\n", dataChannel.Label(), string(msg.Data))
+		})
+	}
 
 	// Create an offer to send to the other process
 	offer, err := peerConnection.CreateOffer(nil)
@@ -308,8 +314,13 @@ func main() { //nolint:gocognit
 		}
 	}
 
+	if !*video {
+		// TODO: Remove this hacky way of blocking?
+		select {}
+	}
+
 	start := time.Now()
-	end := start.Add(5 * time.Minute)
+	end := start.Add(*duration)
 	log := logging.NewDefaultLoggerFactory().NewLogger("offerer")
 	for ; time.Now().Before(end); <-ticker.C {
 		targetBitrate := estimator.GetTargetBitrate()

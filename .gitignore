@@ -2,6 +2,7 @@ node_modules/
 driver/
 .venv/
 __pycache__/
+out/
 *.json
 *.mp4
 *.y4m
