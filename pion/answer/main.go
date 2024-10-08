@@ -200,14 +200,16 @@ func main() { // nolint:gocognit
 		}
 	})
 
+	recvd := 0
 	// Register data channel creation handling
 	peerConnection.OnDataChannel(func(d *webrtc.DataChannel) {
 		fmt.Printf("New DataChannel %s %d\n", d.Label(), d.ID())
 
 		// Register text message handling
-		// d.OnMessage(func(msg webrtc.DataChannelMessage) {
-		// 	fmt.Printf("Message from DataChannel '%s': '%v' bytes\n", d.Label(), len(msg.Data))
-		// })
+		d.OnMessage(func(msg webrtc.DataChannelMessage) {
+			recvd += len(msg.Data)
+			// fmt.Printf("Message from DataChannel '%s': '%v' bytes\n", d.Label(), len(msg.Data))
+		})
 	})
 
 	// Start HTTP server that accepts requests from the offer process to exchange SDP and Candidates

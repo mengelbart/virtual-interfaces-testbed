@@ -31,7 +31,15 @@ def setup_cmd(args, config):
 
 def piontest_cmd(args, config):
     setup(config)
-    piontest(config)
+    piontest(config, name='pion_media', video=True, data=False)
+    clean()
+
+    setup(config)
+    piontest(config, name='pion_data', video=False, data=True)
+    clean()
+
+    setup(config)
+    piontest(config, name='pion_media_x_data', video=True, data=True)
     clean()
 
 
